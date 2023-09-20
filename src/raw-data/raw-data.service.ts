@@ -14,15 +14,12 @@ export class RawDataService {
     const rawData = await this.rawDataModel.find();
     return rawData;
   }
-  // async importData(fileBufferInBase64: string) {
-  //   const buffer = Buffer.from(fileBufferInBase64, 'base64')
-  //   const dataStream = Readable.from(buffer)
-  //   const parsedCsv = parse(dataStream, {
-  //      header: true,
-  //      skipEmptyLines: true,
-  //      complete: (results) => {
-  //         console.log('results:', results)
-  //      },
-  //   })
-  // }
+  async findOne(unique: string): Promise<RawData> {
+    const rawData = await this.rawDataModel.findOne({ unique });
+    return rawData;
+  }
+  async create(rawData: RawData): Promise<RawData> {
+    const newRaw = await this.rawDataModel.create(rawData);
+    return newRaw;
+  }
 }
