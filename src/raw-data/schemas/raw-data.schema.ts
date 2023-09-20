@@ -6,16 +6,19 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 })
 export class RawData {
   @Prop()
-  title: string;
+  unique: string;
 
   @Prop()
-  description: string;
+  resultTime: Date;
 
   @Prop()
-  author: string;
+  enodebId: string;
 
   @Prop()
-  price: number;
+  cellId: string;
+
+  @Prop()
+  availDur: number;
 }
 
 export const RawDataSchema = SchemaFactory.createForClass(RawData);
