@@ -22,4 +22,30 @@ export class RawDataService {
     const newRaw = await this.rawDataModel.create(rawData);
     return newRaw;
   }
+  async find(
+    enodebId: string | undefined,
+    cellId: string | undefined,
+    startDate: Date | undefined,
+    endDate: Date | undefined,
+  ): Promise<RawData[]> {
+    const query: any = {};
+    if (enodebId) {
+      query.enodebId = enodebId;
+    }
+
+    if (cellId) {
+      query.cellId = cellId;
+    }
+
+    if (startDate && endDate) {
+      query.resultTime = {
+        $gte: startDate,
+        $lte: endDate,
+      };
+    }
+
+    const rawData = await this.rawDataModel.find(query).exec();
+
+    return rawData;
+  }
 }

@@ -4,6 +4,7 @@ import {
   Get,
   InternalServerErrorException,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -24,22 +25,23 @@ export class RawDataController {
   @UseInterceptors(FileInterceptor('files'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     try {
-      if (path.extname(file.originalname) !== '.csv') {
-        throw new BadRequestException(
-          'File yang diinput harus ber-ekstensi .csv',
-          'FileExtensionError',
-        );
-      }
-
       await new Promise<void>((resolve, reject) => {
+        if (path.extname(file.originalname) !== '.csv') {
+          reject(
+            new BadRequestException(
+              'File yang diinput harus ber-ekstensi .csv',
+              'FileExtensionError',
+            ),
+          );
+        }
         Papa.parse(file.buffer.toString(), {
           header: true,
           dynamicTyping: true,
           skipEmptyLines: true,
           complete: async (result) => {
             if (result.data && result.data.length > 0) {
+              let flag = 0;
               for (const row of result.data) {
-                console.log(row);
                 let obj = {
                   unique: '',
                   resultTime: new Date(),
@@ -81,6 +83,16 @@ export class RawDataController {
                   if (!existingData) {
                     await this.rawDataService.create(obj);
                   }
+                } else {
+                  flag += 1;
+                  if (flag > 1) {
+                    reject(
+                      new BadRequestException(
+                        'Data dalam file tidak sesuai',
+                        'Mismatched Data',
+                      ),
+                    );
+                  }
                 }
               }
             }
@@ -99,9 +111,45 @@ export class RawDataController {
         });
       });
 
-      return { message: 'Data dalam File berhasil ditambahkan ke database.' };
+      return { message: 'Data berhasil ditambahkan .' };
     } catch (error) {
       throw error;
+    }
+  }
+
+  @Get('graph')
+  async getGraph(
+    @Query('enodebId') enodebId: string,
+    @Query('cellId') cellId: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    try {
+      let startDateObj;
+      let endDateObj;
+      if (startDate && endDate) {
+        startDateObj = new Date(startDate);
+        endDateObj = new Date(endDate);
+        if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+          return { error: 'Invalid date format' };
+        }
+      }
+
+      const rawData = await this.rawDataService.find(
+        enodebId,
+        cellId,
+        startDateObj,
+        endDateObj,
+      );
+
+      const graphData = rawData.map((item) => ({
+        resultTime: item.resultTime,
+        availability: (item.availDur / 900) * 100,
+      }));
+
+      return graphData;
+    } catch (error) {
+      return { error: 'An error occurred' };
     }
   }
 }
